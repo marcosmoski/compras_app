@@ -1,5 +1,6 @@
 
 import {  View, Image, TouchableOpacity, Text, FlatList, Alert } from 'react-native';
+import { useEffect } from 'react';
 import { styles } from './styles';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
@@ -7,6 +8,7 @@ import { Filter } from '@/components/Filter';
 import { FilterStatus } from '@/types/FilterStatus';
 import { Item } from '@/components/Item';
 import { useState } from 'react';
+import { itemsStorage } from '../../storage/itemsStorage';
 
 const FILTER_STATUS = [FilterStatus.DONE, FilterStatus.PENDING]
 
@@ -16,19 +18,33 @@ export function Home() {
   const [description, setDescription] = useState('');
   const [items, setItems] = useState<any[]>([]);
 
-  function handleAddItem() { 
-    if (!description.trim()) { 
-      return Alert.alert('Adicionar item', 'Por favor, insira uma descrição válida.');
-    }
     
-    const newItem = {
+  useEffect(() => {
+   getItems()
+  }, [addItem]);
+
+  async function getItems() {
+    setItems(await itemsStorage.getItems())
+  }
+
+  async function addItem() { 
+    const newItem = { 
       id: Math.random().toString(36).substring(2),
       description,
       status: FilterStatus.PENDING,
     }
-
+    
     // sempre vai atualizar o valor, ou seja precisa do prevItems para modificar a array
-    setItems((prevItems) => [...prevItems, newItem]); 
+    await itemsStorage.add(newItem);
+  }
+
+
+  async function handleAddItem() { 
+    if (!description.trim()) { 
+      return Alert.alert('Adicionar item', 'Por favor, insira uma descrição válida.');
+    }
+    
+    await addItem();
     setDescription('');
   }
 
@@ -37,6 +53,7 @@ export function Home() {
         <Image style={styles.logo} source={require('@/assets/logo.png')}  />
         <View style={styles.form}>
           <Input 
+            value={description}
             placeholder="O que você precisa comprar ? " 
             onChangeText={setDescription}
           />
@@ -56,7 +73,7 @@ export function Home() {
                 />
               )
             })}
-            <TouchableOpacity style={styles.clearButton}>
+            <TouchableOpacity style={styles.clearButton} onPress={() => itemsStorage.clear()}>
               <Text style={styles.clearText}>Limpar</Text>
             </TouchableOpacity>
           </View>
@@ -73,7 +90,7 @@ export function Home() {
                 <Item
                   data={item}
                   onStatus={() => {console.log('Check')}}
-                  onRemove={() => {console.log('Remover')}}
+                  onRemove={() => {itemsStorage.remove(item.id)}}
                 /> 
               )
             }}
