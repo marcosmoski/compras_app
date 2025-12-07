@@ -21,10 +21,10 @@ export function Home() {
     
   useEffect(() => {
    getItems()
-  }, [addItem]);
+  }, [filter]);
 
   async function getItems() {
-    setItems(await itemsStorage.getItems())
+    setItems(await itemsStorage.getItemsByStatus(filter))
   }
 
   async function addItem() { 
@@ -45,7 +45,29 @@ export function Home() {
     }
     
     await addItem();
+
+    Alert.alert('Adicionado', `Adicionado ${description}`);
     setDescription('');
+    setFilter(FilterStatus.PENDING);
+
+  }
+
+  function handleClear() { 
+    Alert.alert('Limpar', 'Deseja remover todos', [{
+      text: 'Sim',
+      onPress: async () => {
+        await itemsStorage.clear();
+        getItems();
+      }
+    }, {
+      text: 'Não',
+      onPress: () => {console.log('ok')} 
+    }])
+  }
+
+  async function handleToggleStatus(id:string) { 
+    await itemsStorage.toogleStatus(id);
+    getItems();
   }
 
   return (
@@ -73,7 +95,7 @@ export function Home() {
                 />
               )
             })}
-            <TouchableOpacity style={styles.clearButton} onPress={() => itemsStorage.clear()}>
+            <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
               <Text style={styles.clearText}>Limpar</Text>
             </TouchableOpacity>
           </View>
@@ -89,7 +111,7 @@ export function Home() {
               return (
                 <Item
                   data={item}
-                  onStatus={() => {console.log('Check')}}
+                  onStatus={() => {handleToggleStatus(item.id)}}
                   onRemove={() => {itemsStorage.remove(item.id)}}
                 /> 
               )
